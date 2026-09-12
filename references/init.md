@@ -98,7 +98,15 @@ If prose conflicts with current implementation or configuration:
 
 Discover validation commands statically from real repository declarations such as package scripts, task runners, CI configuration, or documented developer commands. Do not execute them.
 
-Include a command only when its primary purpose is validation. Exclude commands primarily intended to mutate production, databases, migrations, releases, or deployments. Prefer a non-mutating validation variant when the repository provides one. Record possible file, generated-output, and external-state effects rather than assuming commands are pure.
+Use proportional static discovery in this order:
+
+1. Discover declared validation commands.
+2. Identify and construct the minimum demonstrated validation set: every command that current repository evidence explicitly establishes as a normal, required, or baseline check and that still exists and remains coherent with current configuration. Evidence may come from current CI/workflows, current development or contribution documentation, package scripts or manifests, repository automation or scripts, and explicit validation instructions maintained by the project.
+3. Preserve every distinct check in that minimum set. Respect documentation status: clearly `historical` or stale instructions do not establish a requirement; for `mixed` or `conflicting` documentation, use only the current applicable evidence and retain a material unresolved conflict rather than choosing arbitrarily. A broader check does not silently replace an explicitly demonstrated check that validates a different property. In particular, E2E does not automatically replace build, a full test suite does not automatically replace typecheck, and build does not automatically replace tests. Canonicalize aliases only when current evidence demonstrates that they are equivalent.
+4. Classify cost, tracked-file effects, generated outputs, and external-state effects independently for each preserved command.
+5. After preserving the minimum demonstrated set, optionally add other materially useful validation commands when the result remains compact and evidence-backed.
+
+This ordering is a semantic-stability requirement: unchanged relevant evidence must not arbitrarily lose a demonstrated baseline check. It does not require an exhaustive script inventory or byte-for-byte output. Include a command only when its primary purpose is validation. Exclude commands primarily intended to mutate production, databases, migrations, releases, or deployments. Prefer a non-mutating validation variant when the repository provides one. Do not turn INIT into a deep audit of every script; inspect only enough current evidence to make proportional static classifications. Record possible file, generated-output, and external-state effects rather than assuming commands are pure, and use `UNKNOWN` when static evidence cannot safely classify a safety-relevant property.
 
 ## Freshness and dirty inputs
 
