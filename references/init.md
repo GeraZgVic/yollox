@@ -78,7 +78,7 @@ Do not read or persist secret values. Secret-bearing filenames may establish onl
 6. Identify major modules, entrypoints, persistence boundaries, auth/authz boundaries, external boundaries, and deployment shape only when material to the repository.
 7. List unresolved material questions. Do not pursue details that would not change future navigation or a durable global conclusion.
 8. Inspect source, tests, schemas, or deeper configuration only for those unresolved questions.
-9. For each conclusion, retain a repository-relative evidence pointer. Prefer current executable/configuration evidence over prose when they conflict.
+9. For each conclusion, retain a repository-relative evidence pointer and preserve the scope that evidence demonstrates. Prefer current executable/configuration evidence over prose when they conflict.
 10. Stop exploring each subject as soon as sufficient high-confidence evidence can populate a compact context.
 
 Incomplete but correct is better than complete but invented. Omit optional trivia. Use `UNKNOWN` only for a material field whose absence should remain visible.

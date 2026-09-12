@@ -18,6 +18,8 @@ All recorded paths are normalized relative to the Git root and contain no `..` t
 - Record only durable knowledge that changes future navigation, scoping, or technical decisions.
 - Cite concise repository-relative evidence paths for architectural and convention claims.
 - Prefer current source, manifests, configuration, schema, and tests over non-canonical prose.
+- Keep each fact within the environment or scope its evidence demonstrates. Evidence limited to local, development, test, staging, production, CI, container-only, or optional tooling does not establish a project-wide fact unless repository evidence demonstrates that broader scope. This applies to runtime, database, and service versions; deployment configuration; environment-specific integrations; feature flags; validation prerequisites; and provider configuration.
+- Prefer a compact scoped fact, `UNKNOWN` when the broader value is material, or omission over promoting narrower evidence into a global claim. Do not require verbose environment sections when omission is equally correct and useful.
 - Omit optional fields or sections lacking useful evidence. Use the literal string `UNKNOWN` for a material unknown that should remain explicit.
 - Never store secret values, absolute machine-specific paths, source dumps, exhaustive file lists, or transient working notes.
 
@@ -103,6 +105,19 @@ Allowed content, only with sufficient evidence:
 - exact evidence sources grouped compactly by artifact or knowledge category, plus topology watch paths used by freshness when a Git baseline exists.
 
 Every concrete file used to support persisted knowledge whose content could invalidate that knowledge belongs in `evidence_sources`, including source and test files. This is compact provenance by artifact or category, not per-field provenance. Record exact files; do not add whole source directories as evidence sources by default. Do not turn dependency lists, directory listings, endpoints, classes, or implementation details into index entries. Topology watches concern structural additions, deletions, renames, and moves, not every edit beneath a directory.
+
+Preserve semantic types when classifying project context. `languages` may contain programming, query, stylesheet, or shell languages such as TypeScript, JavaScript, Python, Go, Rust, SQL, CSS, or Bash. Frameworks, tools, and formats remain in their appropriate categories; do not classify Astro, React, Vue, Svelte, Next.js, NestJS, Markdown, Docker, Drizzle, or TipTap as languages solely because corresponding files or usage exist. When classification is ambiguous, prefer the category directly demonstrated by manifests or configuration, omission, or `UNKNOWN` when the category is materially useful rather than a confident misclassification.
+
+For example, when Compose establishes MySQL 8.4 only for local and test environments, preserve that scope:
+
+```yaml
+database:
+  engine: mysql
+  production_version: UNKNOWN
+  local_test_version: "8.4"
+```
+
+If the detailed version adds little decision value, recording only `database.engine: mysql` is also correct; a global `version: "8.4"` is not.
 
 ## `architecture.md`
 

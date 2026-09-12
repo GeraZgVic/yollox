@@ -5,7 +5,7 @@ description: Build a compact, persistent repository context for Codex. Use for `
 
 # Yollox
 
-Yollox v0.1-alpha3 is a Codex-native project lifecycle skill. It creates a compact project index so later work can navigate from durable knowledge to current repository evidence without rereading the whole repository.
+Yollox v0.1-alpha4 is a Codex-native project lifecycle skill. It creates a compact project index so later work can navigate from durable knowledge to current repository evidence without rereading the whole repository.
 
 Principles:
 
