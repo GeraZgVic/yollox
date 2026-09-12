@@ -14,18 +14,27 @@ repository
   -> .yollox/
 ```
 
-INIT is a project lifecycle operation, not an execution mode. Its only writable output is the required `.yollox/` context described in [project-context.md](project-context.md).
+INIT is a project lifecycle operation, not an execution mode. Its only durable writable output is the required `.yollox/` context described in [project-context.md](project-context.md); one reserved temporary sibling staging directory is permitted solely for atomic publication.
 
 ## Preconditions and existing context
 
 1. Resolve the repository root with Git and operate relative to that root. If the current location is not inside a Git worktree, stop without writing and report that INIT requires a Git repository.
 2. Check for `.yollox/` before discovery.
-   - If all five required files exist and their YAML files are parseable with a supported schema, stop without writing and report `already initialized`.
-   - If `.yollox/` exists but required files are missing, unreadable, or use an unsupported schema, stop without writing and report the concrete incompatibility.
+   - Treat it as initialized only when it satisfies every compatibility check in [project-context.md](project-context.md): exactly the five required regular files, three conforming schema-version-1 YAML documents, and two non-empty Markdown documents.
+   - If `.yollox/` exists but any compatibility check fails, stop without writing and report the concrete missing, extra, unreadable, unparsable, unsupported, or structurally invalid item.
    - Never overwrite, regenerate, repair, or delete an existing `.yollox/`. There is no `sync` in v0.1.
-3. Resolve HEAD, the current branch when one exists, and worktree status. A Git repository without a resolvable HEAD may still be inspected, but its baseline is `UNKNOWN` and the result is not reproducible.
+   - Reserved sibling staging directories named `.yollox.tmp-*` are temporary artifacts, never initialized context. A stale one does not block INIT and must not be reused as evidence or as the next staging directory.
+3. Resolve HEAD, the current branch when one exists, and worktree status. A Git repository without a resolvable HEAD may still be inspected, but its baseline is `UNKNOWN`, the result is not reproducible, and Git-path-diff freshness is unavailable.
 
 These checks are read-only in both normal and dry-run operation.
+
+Use only read-only Git subcommands for discovery. Invoke every Git query that can take optional locks or refresh the index with `GIT_OPTIONAL_LOCKS=0` or the equivalent `git --no-optional-locks`. This requirement applies to both modes and is mandatory for the completely read-only dry-run; do not rely on a final intent check to excuse incidental `.git/index` or other Git metadata writes.
+
+## Filesystem boundary
+
+Resolve the Git root canonically. Before reading a repository-relative discovery path, canonicalize its existing target and confirm that it remains within that root. Do not follow absolute paths, `..` traversal, or symlinks whose resolved targets escape the root.
+
+Apply the same containment check before recording a validation `working_directory`: it must be an existing directory whose canonical target remains inside the Git root. Persist normalized repository-relative paths without `..`. If critical evidence is available only through an escaping path, omit it or record the affected material conclusion as `UNKNOWN`; ask the user only when that prevents a useful INIT.
 
 ## Discovery cost order
 
@@ -93,16 +102,20 @@ Include a command only when its primary purpose is validation. Exclude commands 
 
 ## Freshness and dirty inputs
 
-Use `git-path-diff`; do not compute repository-wide, configuration, or per-file hashes.
+Use `git-path-diff` when HEAD resolves; do not compute repository-wide, configuration, or per-file hashes.
 
 Separate:
 
-- `structural_sources`: exact manifests, configuration, schemas, entrypoints, or canonical documents whose content changes could make persisted knowledge stale;
+- `evidence_sources`: exact files actually used to support persisted project, architecture, convention, or validation knowledge. Record every concrete file whose content change could invalidate that knowledge, whether it is source, test, configuration, schema, entrypoint, manifest, or documentation;
 - `topology_watch`: directories where additions, deletions, renames, or moves matter, while ordinary internal edits do not by themselves imply architectural staleness.
+
+Group `evidence_sources` compactly by artifact or knowledge category rather than recording provenance per field. Record exact files, not whole source directories by default. A normal content edit beneath `topology_watch` matters only when that file is also an evidence source; the watch itself detects structural additions, deletions, renames, and moves.
 
 A relevant change means `possibly stale`, not `regenerate everything`. Do not implement reconciliation or sync.
 
-After selecting the evidence used for generated context, compare those relevant inputs with HEAD. If any is modified, deleted, renamed, or untracked relative to HEAD, set `reproducible: false` and record only its repository-relative path and Git status as a non-reproducible input. Otherwise, when HEAD resolves, set `reproducible: true`. Do not fingerprint dirty content.
+After selecting the evidence used for generated context, compare the evidence sources and relevant topology changes with HEAD. If an evidence source is modified, deleted, renamed, or untracked, or if `topology_watch` contains a relevant structural change relative to HEAD, set `reproducible: false` and record only the repository-relative path and concise Git status as a non-reproducible input. Otherwise, when HEAD resolves, set `reproducible: true`. Ordinary internal edits under a watched directory do not count unless the edited file is an evidence source. Do not fingerprint dirty content.
+
+When HEAD does not resolve, do not attempt this comparison and do not declare `git-path-diff`. Use the explicit unavailable freshness state from [project-context.md](project-context.md). A future maintenance capability may establish a baseline after one exists; INIT does not implement that capability.
 
 ## Generate or preview
 
@@ -110,17 +123,22 @@ Prepare exactly the five files defined in [project-context.md](project-context.m
 
 For `$yollox init`:
 
-1. Complete discovery before creating `.yollox/`.
+1. Complete discovery and construct all five artifacts in memory before creating staging or `.yollox/`.
 2. Recheck that `.yollox/` does not exist.
-3. Create only `.yollox/` and its five required files. Do not write temporary artifacts outside it.
-4. Report a compact summary of generated context, visible unknowns/conflicts, and reproducibility.
+3. Create one uniquely named reserved staging directory matching `.yollox.tmp-*` as a sibling of `.yollox` in the Git root. Do not reuse a stale staging directory.
+4. Write exactly the five required artifacts into staging and validate them completely against [project-context.md](project-context.md), including internal consistency.
+5. Recheck that `.yollox/` does not exist, then publish with a same-filesystem atomic no-clobber rename or move from staging to `.yollox`. The publication operation must fail rather than replace any target that appeared concurrently. If the platform cannot guarantee no-clobber publication, stop without publishing.
+6. On a handled failure before publication, make a best effort to remove only the staging directory created by this invocation; `.yollox/` must remain absent. An interruption may leave a reserved staging directory, but it is never context and does not block a later INIT using a different unique staging name.
+7. Report a compact summary of generated context, visible unknowns/conflicts, and reproducibility.
+
+The reserved staging directory is temporary and is the only write exception outside `.yollox/**`. Successful publication leaves exactly `.yollox/` with its five required files and no staging directory from that invocation. Do not add permanent artifacts or a recovery/sync mechanism.
 
 For `$yollox init --dry-run`:
 
 - perform the same discovery and context construction in memory;
-- do not create directories, files, caches, reports, or temporary repository artifacts;
+- do not create staging, directories, files, caches, reports, or temporary repository artifacts;
 - preview the planned five-file tree and compact summaries/key records for each file;
 - call out `UNKNOWN` values, documentation conflicts, material ambiguities, and reproducibility;
 - do not print large inventories or repository dumps.
 
-Before finishing, verify that no path outside `.yollox/**` was intentionally changed and that no validation or prohibited command was executed.
+Before finishing, verify that no path outside `.yollox/**` or the one permitted staging directory was changed, that dry-run changed no path at all, and that no validation or prohibited command was executed.

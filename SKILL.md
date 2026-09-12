@@ -5,7 +5,7 @@ description: Build a compact, persistent repository context for Codex. Use for `
 
 # Yollox
 
-Yollox v0.1-alpha1 is a Codex-native project lifecycle skill. It creates a compact project index so later work can navigate from durable knowledge to current repository evidence without rereading the whole repository.
+Yollox v0.1-alpha3 is a Codex-native project lifecycle skill. It creates a compact project index so later work can navigate from durable knowledge to current repository evidence without rereading the whole repository.
 
 Principles:
 
@@ -22,10 +22,11 @@ Principles:
 ## Global constraints
 
 - Yollox v0.1 requires a Git repository.
-- INIT may write only under `.yollox/**`. Dry-run is completely read-only.
+- INIT may write only under `.yollox/**` plus one reserved, temporary sibling staging directory named `.yollox.tmp-*` during atomic publication. Dry-run is completely read-only and never creates staging.
+- Git discovery must use read-only queries. For any query that can take optional locks or refresh Git metadata, invoke Git with `GIT_OPTIONAL_LOCKS=0` or the equivalent `git --no-optional-locks`; this is mandatory during dry-run.
 - Never treat `.yollox/` as absolute authority; verify applicable behavior against current source, configuration, schema, tests, or genuinely canonical documentation.
 - Do not modify project source, tests, existing documentation, manifests, lockfiles, migrations, CI, container configuration, or other existing project files.
 - Do not install dependencies or run tests, builds, integration suites, containers, migrations, audits, deployment, or validation commands during INIT.
 - Do not perform Git mutations, including add, commit, push, merge, reset, checkout, stash, branch creation, or branch deletion.
-- Do not create agent state, memory, snapshots, worktrees, hashes, histories, specs, or orchestration artifacts.
+- Do not create agent state, memory, snapshots, worktrees, histories, specs, orchestration artifacts, repo-wide hashes, per-file hashes, or fingerprints used as context machinery. Git object IDs such as `baseline_commit` are allowed.
 - Never persist credentials, secret values, or sensitive environment contents.

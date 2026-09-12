@@ -11,7 +11,7 @@ INIT creates exactly:
 `-- state.yaml
 ```
 
-All recorded paths and commands are relative to the Git root unless the command itself requires another working directory. Keep every file compact, evidence-based, and useful for future navigation. Do not duplicate the same narrative across files.
+All recorded paths are normalized relative to the Git root and contain no `..` traversal. Before INIT reads an existing path or records a `working_directory`, its canonical target must remain inside the Git root; do not follow or accept a symlink that resolves outside it. `validation.yaml` records each command's working directory separately instead of encoding it with `cd`. Keep every file compact, evidence-based, and useful for future navigation. Do not duplicate the same narrative across files.
 
 ## General evidence rules
 
@@ -21,14 +21,29 @@ All recorded paths and commands are relative to the Git root unless the command 
 - Omit optional fields or sections lacking useful evidence. Use the literal string `UNKNOWN` for a material unknown that should remain explicit.
 - Never store secret values, absolute machine-specific paths, source dumps, exhaustive file lists, or transient working notes.
 
+Generated YAML files use integer `schema_version: 1`. This format version is independent of the Yollox release version and changes only for an incompatible structural or semantic change.
+
+## Existing-context compatibility
+
+An existing `.yollox/` is compatible only when all of these checks pass:
+
+- its direct contents are exactly the five required regular files shown above, with no missing or extra entry;
+- `project.yaml`, `validation.yaml`, and `state.yaml` parse as YAML mappings and each contains integer `schema_version: 1`;
+- `project.yaml` contains the top-level mappings `project` and `freshness`; its `freshness` contains an `evidence_sources` mapping and a `topology_watch` list;
+- `validation.yaml` contains the top-level `checks` list;
+- `state.yaml` contains `context_revision`, `generated_at`, `baseline_commit`, `reproducible`, and a `freshness` mapping with the applicable required fields defined below;
+- `architecture.md` and `conventions.md` are readable regular files containing at least one non-whitespace character.
+
+Optional subject areas may be omitted as described below, but required containers remain present and may be empty where the contract permits it. A parseable document with the right version but missing a required field is incompatible. INIT reports the concrete failure and does not repair or overwrite it.
+
 ## `project.yaml`
 
 Purpose: a compact, machine-readable technical index.
 
-Use schema version `"0.1"`. The following shape defines allowed subject areas, not a requirement to fill every field:
+Use schema version `1`. The following shape defines allowed subject areas, not a requirement to fill every field:
 
 ```yaml
-schema_version: "0.1"
+schema_version: 1
 project:
   name: example
   identity: compact evidence-based description
@@ -61,11 +76,21 @@ documentation:
   conflicts:
     - compact conflict with evidence paths
 freshness:
-  structural_sources:
-    - path: path/to/manifest
-      reason: defines workspace topology
+  evidence_sources:
+    project:
+      - package.json
+    architecture:
+      - src/middleware.ts
+      - src/actions/index.ts
+    conventions:
+      - .gitattributes
+    validation:
+      - package.json
+      - vitest.config.ts
   topology_watch:
-    - path: apps
+    - path: src/domain
+      reason: domain additions, removals, or moves
+    - path: src/application
       reason: application additions, removals, or moves
 ```
 
@@ -75,9 +100,9 @@ Allowed content, only with sufficient evidence:
 - languages, runtime, package manager, frameworks, and principal stack;
 - major modules and their navigation roles;
 - relevant documentation, status, and material conflicts;
-- structural sources and topology watch paths used by `git-path-diff` freshness.
+- exact evidence sources grouped compactly by artifact or knowledge category, plus topology watch paths used by freshness when a Git baseline exists.
 
-Do not turn dependency lists, directory listings, endpoints, classes, or implementation details into index entries. Topology watches concern structural path changes, not every edit beneath a directory.
+Every concrete file used to support persisted knowledge whose content could invalidate that knowledge belongs in `evidence_sources`, including source and test files. This is compact provenance by artifact or category, not per-field provenance. Record exact files; do not add whole source directories as evidence sources by default. Do not turn dependency lists, directory listings, endpoints, classes, or implementation details into index entries. Topology watches concern structural additions, deletions, renames, and moves, not every edit beneath a directory.
 
 ## `architecture.md`
 
@@ -107,19 +132,22 @@ When evidence is mixed, record the mixed pattern only if knowing it prevents an 
 
 Purpose: statically discovered, real validation commands. INIT never runs these commands.
 
-Use schema version `"0.1"`:
+Use schema version `1`:
 
 ```yaml
-schema_version: "0.1"
+schema_version: 1
 checks:
   - id: unit
     command: exact repository-native command
+    working_directory: .
     scope: concise target or repository scope
     cost: low
     effects:
       tracked_files: none
       generated_outputs: []
-      external_state: none
+      external_state:
+        effect: none
+        targets: []
     evidence:
       - path/to/manifest
 ```
@@ -127,13 +155,35 @@ checks:
 Requirements:
 
 - `id` is short and unique.
-- `command` preserves the repository-declared package manager, task runner, flags, and working-directory assumptions.
+- `command` preserves the repository-declared package manager, task runner, and flags; do not prefix it with `cd`.
+- `working_directory` is `.` or the repository-relative directory from which the command must run.
 - `scope` identifies what the command validates.
 - `cost` is `low`, `medium`, or `high`, inferred relatively within this repository.
 - `effects.tracked_files` is `none`, `possible`, `expected`, or `UNKNOWN`.
 - `effects.generated_outputs` is an empty list, a list of known repository-relative output paths, or `UNKNOWN`.
-- `effects.external_state` is `none`, `possible`, `expected`, or `UNKNOWN`.
+- `effects.external_state.effect` is `none`, `possible`, `expected`, or `UNKNOWN`.
+- `effects.external_state.targets` is a list of compact, evidence-based labels for external state the check could touch. If `effect` is `none`, it must be `[]`. If an effect exists or may exist but no concrete target can be established, it must be the reserved list `[UNKNOWN]`; do not invent a target.
 - `evidence` lists the repository-relative declarations supporting the command.
+
+Future consumers must interpret `UNKNOWN` in `external_state.targets` conservatively: it does not mean that no external target exists. An empty target list is invalid when `effect` is `possible`, `expected`, or `UNKNOWN`.
+
+For example, a check known to touch a test database records:
+
+```yaml
+external_state:
+  effect: expected
+  targets:
+    - test_database
+```
+
+When the effect is possible but its target is not established:
+
+```yaml
+external_state:
+  effect: possible
+  targets:
+    - UNKNOWN
+```
 
 An empty `checks: []` is valid when no real validation command can be established. Do not include commands primarily for production mutation, database changes, migrations, releases, or deployment.
 
@@ -141,13 +191,13 @@ An empty `checks: []` is valid when no real validation command can be establishe
 
 Purpose: minimal lifecycle and Git freshness state, not agent or conversation state.
 
-Use this shape:
+When HEAD resolves, use this shape:
 
 ```yaml
-schema_version: "0.1"
+schema_version: 1
 context_revision: 1
 generated_at: "2026-01-01T00:00:00Z"
-baseline_commit: full-git-object-id-or-UNKNOWN
+baseline_commit: full-git-object-id
 branch: branch-name
 reproducible: true
 freshness:
@@ -156,12 +206,28 @@ freshness:
   relevant_change_means: possibly_stale
 ```
 
+When HEAD does not resolve, use this shape instead:
+
+```yaml
+schema_version: 1
+context_revision: 1
+generated_at: "2026-01-01T00:00:00Z"
+baseline_commit: UNKNOWN
+reproducible: false
+freshness:
+  strategy: unavailable
+  status: possibly_stale
+  reason: no_baseline_commit
+```
+
 Rules:
 
 - `generated_at` is the actual UTC RFC 3339 generation time.
 - `baseline_commit` is the resolved HEAD object ID; use `UNKNOWN` when HEAD does not resolve.
 - Include `branch` only when Git reports one. A detached HEAD needs no invented branch.
 - `reproducible` is false when HEAD is unavailable or any selected relevant input differs from HEAD.
+- When HEAD resolves, `freshness` requires `strategy: git-path-diff`, `comparison_base: baseline_commit`, and `relevant_change_means: possibly_stale`.
+- When HEAD does not resolve, `freshness` requires `strategy: unavailable`, `status: possibly_stale`, and `reason: no_baseline_commit`; do not include `comparison_base` or declare `git-path-diff`.
 - When false because of dirty inputs, add only:
 
 ```yaml
