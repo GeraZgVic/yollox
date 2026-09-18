@@ -1,11 +1,11 @@
 ---
 name: yollox
-description: Use Yollox in Codex to create compact project context, plan bounded work, resolve technical designs, review scoped targets, clean code, fix defects, build requested capabilities, or prepare and execute deployments in a Git repository.
+description: Use Yollox in Codex for bounded engineering work in a Git repository, from a natural-language objective or an explicit planning, design, review, cleanup, fix, build, deployment, or project-context request.
 ---
 
 # Yollox
 
-Yollox v0.1-alpha8 is a Codex-native skill for project context and scoped engineering work. INIT creates a compact project index. PLAN structures proposed work; DESIGN resolves technical decisions. REVIEW reports evidenced defects without editing; CLEAN, FIX, BUILD, and DEPLOY use relevant context to complete their distinct requested outcomes.
+Yollox v0.1-alpha9 is a Codex-native skill for project context and scoped engineering work. The intent entry selects and composes existing capabilities to fulfill an authorized objective. INIT creates a compact project index. PLAN structures proposed work; DESIGN resolves technical decisions. REVIEW reports evidenced defects without editing; CLEAN, FIX, BUILD, and DEPLOY use relevant context to complete their distinct requested outcomes.
 
 Principles:
 
@@ -16,6 +16,7 @@ Principles:
 
 ## Invocation and routing
 
+- `$yollox: <objective>`: read [references/intent.md](references/intent.md) completely, then select only the capabilities needed for the requested outcome. The user need not name modes; permissions follow the request, not the selection.
 - `$yollox init`: read [references/init.md](references/init.md) completely, then follow it. Read [references/project-context.md](references/project-context.md) when preparing or interpreting the generated files.
 - `$yollox init --dry-run`: read the same references and perform the same discovery reasoning without writing anything.
 - `$yollox plan: <objective>`: propose bounded, verifiable work; read [references/plan.md](references/plan.md) completely.
@@ -27,16 +28,18 @@ Principles:
 - `$yollox deploy: <objective>`: prepare a deployment path or publish a resolved release; read [references/deploy.md](references/deploy.md).
 - Any other Yollox command or mode is not implemented. Say so without approximating it through another workflow.
 
-For CLEAN, FIX, BUILD, and DEPLOY, read [references/execution.md](references/execution.md) and the selected mode reference completely once. Read the Project Context contract when consuming `.yollox/`. Do not load unrelated modes or INIT. Modes do not invoke each other automatically; an explicitly combined request may use the necessary references without a mandatory mode sequence.
+For CLEAN, FIX, BUILD, and DEPLOY, read [references/execution.md](references/execution.md) and the selected mode reference completely once. Read the Project Context contract when consuming `.yollox/`. Do not load unrelated modes or INIT. Modes do not invoke each other automatically; an explicitly combined request or the intent entry may select the capabilities necessary for the authorized outcome without a mandatory mode sequence. The same mode contracts apply whether selected by name or through intent. Completing one capability does not authorize another.
 
-PLAN and DESIGN are optional, independent capabilities, not prerequisites for other modes. Load only the requested reference, plus [references/project-context.md](references/project-context.md) when consuming `.yollox/`; do not inherit editing permissions from `execution.md` or run INIT. A combined planning-and-design request can receive one coherent proposal without duplicate documents.
+PLAN and DESIGN are optional, independent capabilities, not prerequisites for other modes. Load only the requested or needed proposal references, plus [references/project-context.md](references/project-context.md) when consuming `.yollox/`; proposal work does not inherit editing permissions from `execution.md` or run INIT. A combined planning-and-design request can receive one coherent proposal without duplicate documents.
+
+Explicit modes retain their boundaries. Do not reinterpret a pure PLAN, DESIGN, REVIEW, CLEAN, or deployment-preparation request as broader execution, or an unsupported command as an intent request. The intent entry never initializes or maintains Project Context implicitly; INIT remains an explicitly requested lifecycle operation.
 
 ## Global constraints
 
 - Yollox v0.1 requires a Git repository.
 - Git discovery must use read-only queries. For any query that can take optional locks or refresh Git metadata, invoke Git with `GIT_OPTIONAL_LOCKS=0` or the equivalent `git --no-optional-locks`; this is mandatory during dry-run.
 - Never treat `.yollox/` as absolute authority; verify applicable behavior against current source, configuration, schema, tests, or genuinely canonical documentation.
-- No mode invocation grants implicit Git mutation permission. During INIT, REVIEW, PLAN, and DESIGN, do not perform Git mutations, including add, commit, push, merge, reset, checkout, stash, branch creation, or branch deletion. During CLEAN, FIX, BUILD, and DEPLOY, a concrete Git operation requires explicit user authorization and must preserve unrelated user work.
+- Neither the intent entry nor a mode invocation grants implicit Git mutation permission. During INIT, REVIEW, PLAN, and DESIGN, do not perform Git mutations, including add, commit, push, merge, reset, checkout, stash, branch creation, or branch deletion. During CLEAN, FIX, BUILD, and DEPLOY, a concrete Git operation requires explicit user authorization and must preserve unrelated user work.
 - Do not create agent state, memory, snapshots, worktrees, histories, specs, orchestration artifacts, repo-wide hashes, per-file hashes, or fingerprints used as context machinery. Git object IDs such as `baseline_commit` are allowed.
 - Never persist credentials, secret values, or sensitive environment contents.
 

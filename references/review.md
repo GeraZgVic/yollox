@@ -1,6 +1,6 @@
 # REVIEW workflow
 
-Use this workflow only for `$yollox review: <objective>`.
+Use for `$yollox review: <objective>` or a review selected through the intent entry. The same review scope, evidence and READ-ONLY boundaries apply.
 
 ## Outcome
 
@@ -165,4 +165,4 @@ Before finishing, verify:
 - Discovery and validation remained proportional, and execution results are accurately attributed.
 - No prohibited writes or commands occurred; any explicitly authorized validation exception stayed within its concrete bounds. If an unexpected effect occurred, disclose it and do not automatically clean up or revert user state.
 
-Then stop. REVIEW does not fix, refresh context, create auxiliary state, or transition into another mode.
+Then end the review. REVIEW does not fix, refresh context, create auxiliary state, or transition into another mode. A combined request or the intent entry may separately continue work already authorized by the user; the review result itself grants no such authorization.
