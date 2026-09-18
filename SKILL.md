@@ -5,7 +5,7 @@ description: Use Yollox in Codex for bounded engineering work in a Git repositor
 
 # Yollox
 
-Yollox v0.1-alpha9 is a Codex-native skill for project context and scoped engineering work. The intent entry selects and composes existing capabilities to fulfill an authorized objective. INIT creates a compact project index. PLAN structures proposed work; DESIGN resolves technical decisions. REVIEW reports evidenced defects without editing; CLEAN, FIX, BUILD, and DEPLOY use relevant context to complete their distinct requested outcomes.
+Yollox v0.1-alpha10 is a Codex-native skill for project context and scoped engineering work. The intent entry selects and composes existing capabilities to fulfill an authorized objective. INIT creates a compact project index. PLAN structures proposed work; DESIGN resolves technical decisions. REVIEW reports evidenced defects without editing; CLEAN, FIX, BUILD, and DEPLOY use relevant context to complete their distinct requested outcomes.
 
 Principles:
 
@@ -33,6 +33,12 @@ For CLEAN, FIX, BUILD, and DEPLOY, read [references/execution.md](references/exe
 PLAN and DESIGN are optional, independent capabilities, not prerequisites for other modes. Load only the requested or needed proposal references, plus [references/project-context.md](references/project-context.md) when consuming `.yollox/`; proposal work does not inherit editing permissions from `execution.md` or run INIT. A combined planning-and-design request can receive one coherent proposal without duplicate documents.
 
 Explicit modes retain their boundaries. Do not reinterpret a pure PLAN, DESIGN, REVIEW, CLEAN, or deployment-preparation request as broader execution, or an unsupported command as an intent request. The intent entry never initializes or maintains Project Context implicitly; INIT remains an explicitly requested lifecycle operation.
+
+## Model and reasoning suitability
+
+For the intent entry and every explicit mode, retain the current configuration by default. Use evidence from the work already needed to assess its suitability provisionally and reconsider when scope, uncertainty, risk or verification materially changes. Do not assign fixed models by mode or add a classification phase, questionnaire or discovery pass.
+
+Read [references/model-selection.md](references/model-selection.md) completely before recommending a configuration change or when the user requests model/reasoning advice. Evaluate model and reasoning effort separately, honor user constraints, and recommend only a concrete benefit for the remaining work. This policy is advisory: it does not change models, effort, session or client configuration, and never presents a recommendation as an effective change. A pending recommendation alone does not block authorized work or relax a mode's completion and evidence requirements.
 
 ## Global constraints
 

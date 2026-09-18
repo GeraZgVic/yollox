@@ -19,6 +19,8 @@ Briefly communicate the intended result and material scope when useful. Do not t
 - Ask when a missing user choice changes the intended behavior, priorities, compatibility, data consequences, scope or authorized effects and cannot be established from available evidence. Give a recommendation and the material tradeoff when supported, rather than asking the user to select an internal mode.
 - Honor decisions and authorization already supplied. Approval of a proposal alone does not order implementation. A request that already includes implementation need not pause after its planning or design reasoning unless a material unresolved decision prevents progress.
 
+When discovery or later evidence materially changes the difficulty of the remaining work, apply the skill's shared model and reasoning suitability policy. Follow [model-selection.md](model-selection.md) before recommending a change; capability selection itself neither requires a new configuration nor changes the effective one.
+
 ## Select only necessary capabilities
 
 Select by the result and obligations, not by keyword matching. Read each selected mode reference completely once, plus [execution.md](execution.md) for CLEAN, FIX, BUILD or DEPLOY. Use the links in the skill; do not load every reference to classify a request.
